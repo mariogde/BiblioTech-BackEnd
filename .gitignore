@@ -1,0 +1,15 @@
+# Windows
+Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# VS Code
+.vscode/
+.history/
+*.code-workspace
+
+# Futuros arquivos do Spring Boot (Maven/Gradle)
+target/
+build/
+.gradle/
+*.jar

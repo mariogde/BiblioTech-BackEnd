@@ -1,12 +1,18 @@
 package com.bibliotech.backend.users.models.entities;
 
 import jakarta.persistence.*;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
+
 import java.io.Serializable;
 import java.time.LocalDate;
+import java.util.Collection;
+import java.util.List;
 
 @Entity
 @Table(name = "TB_USER")
-public class User implements Serializable {
+public class User implements Serializable, UserDetails {
     private static final long serialVersionUID = 1L;
 
     @Id
@@ -39,6 +45,46 @@ public class User implements Serializable {
 
     @Column(nullable = false, length = 255)
     private String password;
+
+    //definição de permissões do usuário//
+
+    @Override
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        if (Boolean.TRUE.equals(this.isAdmin)) {
+            return List.of(
+                    new SimpleGrantedAuthority("ROLE_ADMIN"),
+                    new SimpleGrantedAuthority("ROLE_USER")
+            );
+        }
+        return List.of(new SimpleGrantedAuthority("ROLE_USER"));
+    }
+
+    //apenas atributo de login//
+    @Override
+    public String getUsername() {
+        return this.email;
+    }
+    //conta sempre ativa//
+    @Override
+    public boolean isAccountNonExpired() {
+        return true;
+    }
+    //conta sempre destravada//
+    @Override
+    public boolean isAccountNonLocked() {
+        return true;
+    }
+    //senha sempre valida//
+    @Override
+    public boolean isCredentialsNonExpired() {
+        return true;
+    }
+    //informa usuário ativo ou desativado//
+    @Override
+    public boolean isEnabled() {
+        return !Boolean.TRUE.equals(this.isDisabled);
+    }
+
 
     public Long getId() {
         return id;

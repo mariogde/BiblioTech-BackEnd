@@ -3,6 +3,8 @@ package com.bibliotech.backend.loans.services;
 import com.bibliotech.backend.books.models.dtos.BookResponseDTO;
 import com.bibliotech.backend.books.models.entities.Book;
 import com.bibliotech.backend.books.repositories.BookRepository;
+import com.bibliotech.backend.exceptions.InvalidOperationException;
+import com.bibliotech.backend.exceptions.ResourceNotFoundException;
 import com.bibliotech.backend.loans.models.dtos.LoanRequestDTO;
 import com.bibliotech.backend.loans.models.dtos.LoanResponseDTO;
 import com.bibliotech.backend.loans.models.entities.Loan;
@@ -35,16 +37,18 @@ public class LoanService {
 
     @Transactional
     public LoanResponseDTO create(LoanRequestDTO dto) {
-        User user = userRepository.findByCpf(dto.getUserCpf()).orElseThrow(() -> new RuntimeException("Usuário não encontrado com o CPF informado"));
+        User user = userRepository.findByCpf(dto.getUserCpf())
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with CPF: " + dto.getUserCpf()));
 
         if (Boolean.TRUE.equals(user.getDisabled())) {
-            throw new RuntimeException("Não é possível realizar aluguéis para um usuário inativo");
+            throw new InvalidOperationException("Cannot create loan for a disabled user account.");
         }
 
-        Book book = bookRepository.findByTitle(dto.getBookTitle()).orElseThrow(() -> new RuntimeException("Livro não encontrado com o título informado"));
+        Book book = bookRepository.findByTitle(dto.getBookTitle())
+                .orElseThrow(() -> new ResourceNotFoundException("Book not found with title: " + dto.getBookTitle()));
 
         if (book.getInUseQuantity() >= book.getTotalQuantity()) {
-            throw new RuntimeException("Não há exemplares disponíveis deste livro para empréstimo");
+            throw new InvalidOperationException("No available copies of book '" + book.getTitle() + "' for loan.");
         }
 
         book.setInUseQuantity(book.getInUseQuantity() + 1);
@@ -68,17 +72,19 @@ public class LoanService {
 
     @Transactional(readOnly = true)
     public LoanResponseDTO findById(Long id) {
-        Loan loan = loanRepository.findById(id).orElseThrow(() -> new RuntimeException("Empréstimo não encontrado"));
+        Loan loan = loanRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Loan not found with ID: " + id));
 
         return toResponseDTO(loan);
     }
 
     @Transactional
     public LoanResponseDTO returnBook(Long id) {
-        Loan loan = loanRepository.findById(id).orElseThrow(() -> new RuntimeException("Empréstimo não encontrado"));
+        Loan loan = loanRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Loan not found with ID: " + id));
 
         if (loan.getStatus() == LoanStatus.RETURNED) {
-            throw new RuntimeException("Este livro já foi devolvido");
+            throw new InvalidOperationException("This book has already been returned.");
         }
 
         Book book = loan.getBook();
@@ -96,7 +102,8 @@ public class LoanService {
 
     @Transactional
     public void delete(Long id) {
-        Loan loan = loanRepository.findById(id).orElseThrow(() -> new RuntimeException("Empréstimo não encontrado"));
+        Loan loan = loanRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Loan not found with ID: " + id));
 
         loanRepository.delete(loan);
     }

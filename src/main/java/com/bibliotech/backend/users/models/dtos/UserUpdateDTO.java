@@ -12,7 +12,7 @@ public class UserUpdateDTO {
 
     @NotBlank
     @Email
-    @Size(max = 20)
+    @Size(max = 100)
     private String email;
 
     @NotBlank

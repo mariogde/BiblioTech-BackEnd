@@ -1,6 +1,8 @@
 package com.bibliotech.backend.publishers.services;
 
 import com.bibliotech.backend.books.repositories.BookRepository;
+import com.bibliotech.backend.exceptions.DataConflictException;
+import com.bibliotech.backend.exceptions.ResourceNotFoundException;
 import com.bibliotech.backend.publishers.models.dtos.PublisherRequestDTO;
 import com.bibliotech.backend.publishers.models.dtos.PublisherResponseDTO;
 import com.bibliotech.backend.publishers.models.entities.Publisher;
@@ -26,7 +28,7 @@ public class PublisherService {
     @Transactional
     public PublisherResponseDTO create(PublisherRequestDTO dto) {
         if (publisherRepository.existsByEmail(dto.getEmail())) {
-            throw new IllegalArgumentException("E-mail de editora já cadastrado");
+            throw new DataConflictException("Publisher email is already registered: " + dto.getEmail());
         }
 
         var publisher = new Publisher();
@@ -43,14 +45,16 @@ public class PublisherService {
 
     @Transactional(readOnly = true)
     public PublisherResponseDTO findById(Long id) {
-        Publisher publisher = publisherRepository.findById(id).orElseThrow(() -> new RuntimeException("Editora não encontrada"));
+        Publisher publisher = publisherRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Publisher not found with ID: " + id));
 
         return toResponseDTO(publisher);
     }
 
     @Transactional
     public PublisherResponseDTO update(Long id, PublisherRequestDTO dto) {
-        Publisher publisher = publisherRepository.findById(id).orElseThrow(() -> new RuntimeException("Editora não encontrada"));
+        Publisher publisher = publisherRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Publisher not found with ID: " + id));
 
         BeanUtils.copyProperties(dto, publisher);
 
@@ -60,7 +64,8 @@ public class PublisherService {
 
     @Transactional
     public void delete(Long id) {
-        Publisher publisher = publisherRepository.findById(id).orElseThrow(() -> new RuntimeException("Editora não encontrada"));
+        Publisher publisher = publisherRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Publisher not found with ID: " + id));
 
         publisherRepository.delete(publisher);
     }

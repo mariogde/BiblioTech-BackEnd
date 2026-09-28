@@ -4,15 +4,16 @@ import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.exceptions.JWTCreationException;
 import com.auth0.jwt.exceptions.JWTVerificationException;
+import com.bibliotech.backend.exceptions.InvalidOperationException;
 import com.bibliotech.backend.users.models.entities.User;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
 import org.springframework.security.core.GrantedAuthority;
-import java.util.stream.Collectors;
+import org.springframework.stereotype.Service;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
+import java.util.stream.Collectors;
 
 @Service
 public class TokenService {
@@ -38,7 +39,7 @@ public class TokenService {
                     .withExpiresAt(generateExpirationDate())
                     .sign(algorithm);
         } catch (JWTCreationException exception) {
-            throw new RuntimeException("Erro ao gerar token JWT", exception);
+            throw new InvalidOperationException("Failed to generate JWT authentication token.");
         }
     }
 

@@ -1,11 +1,16 @@
 package com.bibliotech.backend.users.services;
 
+import com.bibliotech.backend.exceptions.DataConflictException;
+import com.bibliotech.backend.exceptions.InvalidOperationException;
+import com.bibliotech.backend.exceptions.ResourceNotFoundException;
 import com.bibliotech.backend.users.models.dtos.UserRequestDTO;
 import com.bibliotech.backend.users.models.dtos.UserResponseDTO;
 import com.bibliotech.backend.users.models.dtos.UserUpdateDTO;
 import com.bibliotech.backend.users.models.entities.User;
 import com.bibliotech.backend.users.repositories.UserRepository;
 import org.springframework.beans.BeanUtils;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,22 +21,26 @@ import java.util.stream.Collectors;
 public class UserService {
 
     private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
 
-    public UserService(UserRepository userRepository) {
+    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @Transactional
     public UserResponseDTO create(UserRequestDTO dto) {
         if (userRepository.existsByEmail(dto.getEmail())) {
-            throw new IllegalArgumentException("CPF ou E-mail já cadastrado");
+            throw new DataConflictException("Email already registered: " + dto.getEmail());
         }
         if (userRepository.existsByCpf(dto.getCpf())) {
-            throw new IllegalArgumentException("CPF ou E-mail já cadastrado");
+            throw new DataConflictException("CPF already registered: " + dto.getCpf());
         }
 
         var user = new User();
         BeanUtils.copyProperties(dto, user);
+
+        user.setPassword(passwordEncoder.encode(dto.getPassword()));
         user.setAdmin(false);
         user.setDisabled(false);
 
@@ -46,32 +55,33 @@ public class UserService {
 
     @Transactional(readOnly = true)
     public UserResponseDTO findById(Long id) {
-        User user = userRepository.findById(id).orElseThrow(() -> new RuntimeException("Conta não existente"));
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("User account not found with ID: " + id));
 
         if (Boolean.TRUE.equals(user.getDisabled())) {
-            throw new IllegalStateException("Acesso bloqueado: Usuário inativo.");
+            throw new InvalidOperationException("Access denied: User account is disabled.");
         }
 
         return toResponseDTO(user);
     }
 
     @Transactional
-    public UserResponseDTO update(Long id, UserUpdateDTO dto) {
-        User user = userRepository.findById(id).orElseThrow(() -> new RuntimeException("Conta não existente"));
+    public UserResponseDTO updateMyProfile(UserUpdateDTO dto) {
+        User currentUser = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
-        if (Boolean.TRUE.equals(user.getAdmin())) {
-            throw new IllegalStateException("O administrador do sistema não pode executar essa tarefa.");
-        }
+        currentUser.setName(dto.getName());
+        currentUser.setEmail(dto.getEmail());
+        currentUser.setPhone(dto.getPhone());
+        currentUser.setAddress(dto.getAddress());
 
-        BeanUtils.copyProperties(dto, user);
-
-        User updatedUser = userRepository.save(user);
+        User updatedUser = userRepository.save(currentUser);
         return toResponseDTO(updatedUser);
     }
 
     @Transactional
     public void delete(Long id) {
-        User user = userRepository.findById(id).orElseThrow(() -> new RuntimeException("Conta não existente"));
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("User account not found with ID: " + id));
 
         userRepository.delete(user);
     }

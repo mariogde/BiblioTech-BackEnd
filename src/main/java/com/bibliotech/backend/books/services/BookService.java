@@ -4,6 +4,7 @@ import com.bibliotech.backend.books.models.dtos.BookRequestDTO;
 import com.bibliotech.backend.books.models.dtos.BookResponseDTO;
 import com.bibliotech.backend.books.models.entities.Book;
 import com.bibliotech.backend.books.repositories.BookRepository;
+import com.bibliotech.backend.exceptions.ResourceNotFoundException;
 import com.bibliotech.backend.publishers.models.dtos.PublisherSummaryDTO;
 import com.bibliotech.backend.publishers.models.entities.Publisher;
 import com.bibliotech.backend.publishers.repositories.PublisherRepository;
@@ -27,7 +28,8 @@ public class BookService {
 
     @Transactional
     public BookResponseDTO create(BookRequestDTO dto) {
-        Publisher publisher = publisherRepository.findById(dto.getPublisherId()).orElseThrow(() -> new RuntimeException("Editora informada não existe"));
+        Publisher publisher = publisherRepository.findById(dto.getPublisherId())
+                .orElseThrow(() -> new ResourceNotFoundException("Publisher not found with ID: " + dto.getPublisherId()));
 
         var book = new Book();
         BeanUtils.copyProperties(dto, book);
@@ -46,16 +48,19 @@ public class BookService {
 
     @Transactional(readOnly = true)
     public BookResponseDTO findById(Long id) {
-        Book book = bookRepository.findById(id).orElseThrow(() -> new RuntimeException("Livro não encontrado"));
+        Book book = bookRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Book not found with ID: " + id));
 
         return toResponseDTO(book);
     }
 
     @Transactional
     public BookResponseDTO update(Long id, BookRequestDTO dto) {
-        Book book = bookRepository.findById(id).orElseThrow(() -> new RuntimeException("Livro não encontrado"));
+        Book book = bookRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Book not found with ID: " + id));
 
-        Publisher publisher = publisherRepository.findById(dto.getPublisherId()).orElseThrow(() -> new RuntimeException("Editora informada não existe"));
+        Publisher publisher = publisherRepository.findById(dto.getPublisherId())
+                .orElseThrow(() -> new ResourceNotFoundException("Publisher not found with ID: " + dto.getPublisherId()));
 
         BeanUtils.copyProperties(dto, book);
         book.setPublisher(publisher);
@@ -67,7 +72,7 @@ public class BookService {
     @Transactional
     public void delete(Long id) {
         Book book = bookRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Livro não encontrado"));
+                .orElseThrow(() -> new ResourceNotFoundException("Book not found with ID: " + id));
 
         bookRepository.delete(book);
     }

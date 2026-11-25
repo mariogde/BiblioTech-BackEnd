@@ -9,4 +9,7 @@ import java.util.List;
 public interface LoanRepository extends JpaRepository<Loan, Long> {
     List<Loan> findByUserId(Long userId);
     List<Loan> findByStatus(LoanStatus status);
+    List<Loan> findByUserIdOrderByLoanDateDesc(Long userId);
+
+    boolean existsByBookId(Long bookId);
 }

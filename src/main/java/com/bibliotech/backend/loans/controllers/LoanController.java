@@ -2,6 +2,7 @@ package com.bibliotech.backend.loans.controllers;
 
 import com.bibliotech.backend.loans.models.dtos.LoanRequestDTO;
 import com.bibliotech.backend.loans.models.dtos.LoanResponseDTO;
+import com.bibliotech.backend.loans.models.dtos.TenantLoanHistoryDTO;
 import com.bibliotech.backend.loans.services.LoanService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -34,6 +35,11 @@ public class LoanController {
     @GetMapping("/{id}")
     public ResponseEntity<LoanResponseDTO> findById(@PathVariable Long id) {
         return ResponseEntity.ok(loanService.findById(id));
+    }
+
+    @GetMapping("/user/{userId}")
+    public ResponseEntity<List<TenantLoanHistoryDTO>> findHistoryByUserId(@PathVariable Long userId) {
+        return ResponseEntity.ok(loanService.findHistoryByUserId(userId));
     }
 
     @PatchMapping("/{id}/return")

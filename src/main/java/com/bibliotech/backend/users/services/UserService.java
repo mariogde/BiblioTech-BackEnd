@@ -6,6 +6,7 @@ import com.bibliotech.backend.exceptions.ResourceNotFoundException;
 import com.bibliotech.backend.users.models.dtos.UserRequestDTO;
 import com.bibliotech.backend.users.models.dtos.UserResponseDTO;
 import com.bibliotech.backend.users.models.dtos.UserUpdateDTO;
+import com.bibliotech.backend.users.models.dtos.PasswordResetDTO;
 import com.bibliotech.backend.users.models.entities.User;
 import com.bibliotech.backend.users.repositories.UserRepository;
 import org.springframework.beans.BeanUtils;
@@ -90,5 +91,28 @@ public class UserService {
         UserResponseDTO dto = new UserResponseDTO();
         BeanUtils.copyProperties(user, dto);
         return dto;
+    }
+
+    @Transactional(readOnly = true)
+    public void validateRecoveryData(String email, String cpf) {
+        User user = userRepository.findByEmailAndCpf(email, cpf)
+                .orElseThrow(() -> new ResourceNotFoundException("E-mail ou CPF não encontrados."));
+
+        if (Boolean.TRUE.equals(user.getDisabled())) {
+            throw new InvalidOperationException("Conta de usuário desativada.");
+        }
+    }
+
+    @Transactional
+    public void resetPassword(PasswordResetDTO dto) {
+        if (!dto.getNewPassword().equals(dto.getConfirmPassword())) {
+            throw new InvalidOperationException("As senhas não coincidem.");
+        }
+
+        User user = userRepository.findByEmailAndCpf(dto.getEmail(), dto.getCpf())
+                .orElseThrow(() -> new ResourceNotFoundException("Dados inválidos para redefinição."));
+
+        user.setPassword(passwordEncoder.encode(dto.getNewPassword()));
+        userRepository.save(user);
     }
 }

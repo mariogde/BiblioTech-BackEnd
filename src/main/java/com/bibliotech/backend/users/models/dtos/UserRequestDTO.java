@@ -15,7 +15,7 @@ public class UserRequestDTO {
 
     @NotBlank
     @Email
-    @Size(max = 20)
+    @Size(max = 50)
     private String email;
 
     @NotBlank
@@ -29,7 +29,6 @@ public class UserRequestDTO {
     @NotNull
     private LocalDate dateOfBirth;
 
-    @NotBlank
     @Size(max = 50)
     private String address;
 

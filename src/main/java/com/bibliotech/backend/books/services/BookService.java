@@ -5,6 +5,7 @@ import com.bibliotech.backend.books.models.dtos.BookResponseDTO;
 import com.bibliotech.backend.books.models.entities.Book;
 import com.bibliotech.backend.books.repositories.BookRepository;
 import com.bibliotech.backend.exceptions.ResourceNotFoundException;
+import com.bibliotech.backend.loans.repositories.LoanRepository;
 import com.bibliotech.backend.publishers.models.dtos.PublisherSummaryDTO;
 import com.bibliotech.backend.publishers.models.entities.Publisher;
 import com.bibliotech.backend.publishers.repositories.PublisherRepository;
@@ -20,10 +21,14 @@ public class BookService {
 
     private final BookRepository bookRepository;
     private final PublisherRepository publisherRepository;
+    private final LoanRepository loanRepository;
 
-    public BookService(BookRepository bookRepository, PublisherRepository publisherRepository) {
+    public BookService(BookRepository bookRepository,
+                       PublisherRepository publisherRepository,
+                       LoanRepository loanRepository) {
         this.bookRepository = bookRepository;
         this.publisherRepository = publisherRepository;
+        this.loanRepository = loanRepository;
     }
 
     @Transactional
@@ -73,6 +78,10 @@ public class BookService {
     public void delete(Long id) {
         Book book = bookRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Book not found with ID: " + id));
+
+        if (loanRepository.existsByBookId(id)) {
+            throw new IllegalStateException("Não é possível excluir o livro pois existem aluguéis vinculados a ele.");
+        }
 
         bookRepository.delete(book);
     }

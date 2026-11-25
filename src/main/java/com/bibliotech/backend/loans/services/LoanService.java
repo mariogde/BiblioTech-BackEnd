@@ -7,6 +7,7 @@ import com.bibliotech.backend.exceptions.InvalidOperationException;
 import com.bibliotech.backend.exceptions.ResourceNotFoundException;
 import com.bibliotech.backend.loans.models.dtos.LoanRequestDTO;
 import com.bibliotech.backend.loans.models.dtos.LoanResponseDTO;
+import com.bibliotech.backend.loans.models.dtos.TenantLoanHistoryDTO;
 import com.bibliotech.backend.loans.models.entities.Loan;
 import com.bibliotech.backend.loans.models.enums.LoanStatus;
 import com.bibliotech.backend.loans.repositories.LoanRepository;
@@ -76,6 +77,14 @@ public class LoanService {
                 .orElseThrow(() -> new ResourceNotFoundException("Loan not found with ID: " + id));
 
         return toResponseDTO(loan);
+    }
+
+    @Transactional(readOnly = true)
+    public List<TenantLoanHistoryDTO> findHistoryByUserId(Long userId) {
+        return loanRepository.findByUserIdOrderByLoanDateDesc(userId)
+                .stream()
+                .map(TenantLoanHistoryDTO::new)
+                .toList();
     }
 
     @Transactional
